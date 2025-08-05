@@ -28,17 +28,18 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     def ask_gpt(message):
+def ask_gpt(message):
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "คุณคือผู้ช่วย AI ชื่อซายะ พูดจาน่ารัก ฉลาด และใจดี"},
+                {"role": "system", "content": "คุณคือผู้ช่วย AI ชื่อซายะ พูดฉลาด น่ารัก"},
                 {"role": "user", "content": message}
             ]
         )
         return response.choices[0].message.content.strip()
-    except Exception as e:
-        response_message = ask_gpt(user_message)
+except Exception as e:
+    return "มีปัญหาค่ะ ตอบกลับมาไม่ได้เพราะมีข้อผิดพลาด: " + str(e)
 
 user_message = event.message.text
 response_message = ask_gpt(user_message)
