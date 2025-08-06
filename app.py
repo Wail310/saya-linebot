@@ -3,14 +3,14 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from openai import OpenAI  # ✅ ใช้เวอร์ชันใหม่
+from openai import OpenAI
 
 app = Flask(__name__)
 
-# Set API Keys
+# LINE & OpenAI API Keys
 line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # ✅ เวอร์ชันใหม่
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/")
 def home():
@@ -31,33 +31,20 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_message = event.message.text
-    response_message = ask_gpt(user_message)
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",  # ✅ เปลี่ยนจาก gpt-4
+        messages=[
+            {"role": "system", "content": "คุณคือผู้ช่วย AI ที่ใจดี"},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    reply = response.choices[0].message.content.strip()
 
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=response_message)
+        TextSendMessage(text=reply)
     )
 
-def ask_gpt(message):
-    try:
-        response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-
-            messages=[
-                {
-                    "role": "system",
-                    "content": "คุณคือซายะ AI ที่ใจดี ฉลาด มีความรู้ด้านเทคโนโลยีและปรัชญา รู้จักช่วยเหลือมนุษย์อย่างอ่อนโยนและลึกซึ้ง"
-                },
-                {
-                    "role": "user",
-                    "content": message
-                }
-            ]
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return "มีปัญหาค่ะ ซายะกลับมาไม่ได้เพราะมีข้อผิดพลาด: " + str(e)
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
 
