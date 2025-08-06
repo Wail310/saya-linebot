@@ -9,19 +9,16 @@ from linebot.v3.exceptions import InvalidSignatureError
 
 import openai
 
-# โหลด .env
+# Load environment variables
 load_dotenv()
 
-# LINE config
 channel_secret = os.getenv("LINE_CHANNEL_SECRET")
 channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# ตรวจสอบค่า
 if channel_secret is None or channel_access_token is None:
-    raise Exception("Specify LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN as environment variables.")
+    raise Exception("Please set LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN")
 
-# Flask App
 app = Flask(__name__)
 handler = WebhookHandler(channel_secret)
 
@@ -52,15 +49,13 @@ def callback():
 def handle_message(event):
     user_message = event.message.text
 
-    # เรียกใช้ OpenAI GPT
     response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",  # เปลี่ยนเป็น "gpt-4" ถ้าคุณมีสิทธิ์ใช้
+        model="gpt-3.5-turbo",  # หรือ gpt-4 ถ้าเปิดใช้ได้
         messages=[{"role": "user", "content": user_message}]
     )
 
     reply_text = response.choices[0].message.content.strip()
 
-    # ตอบกลับผู้ใช้
     line_bot_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,
