@@ -50,7 +50,7 @@ def handle_message(event):
     user_message = event.message.text
 
     response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",  # หรือ gpt-4 ถ้าเปิดใช้ได้
+        model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": user_message}]
     )
 
