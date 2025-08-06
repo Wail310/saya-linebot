@@ -2,30 +2,32 @@ import os
 from flask import Flask, request, abort
 from dotenv import load_dotenv
 
-from linebot.v3.messaging import MessagingApi, ReplyMessageRequest, TextMessage
 from linebot.v3.webhook import WebhookHandler
+from linebot.v3.messaging import MessagingApi, Configuration, ApiClient, ReplyMessageRequest, TextMessage
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
-from linebot.v3.models import TextMessageContent
 
 import openai
 
+# โหลด .env
 load_dotenv()
 
-# LINE API
+# LINE config
 channel_secret = os.getenv("LINE_CHANNEL_SECRET")
 channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-
-if channel_secret is None or channel_access_token is None:
-    raise Exception("Missing LINE_CHANNEL_SECRET or LINE_CHANNEL_ACCESS_TOKEN")
-
-handler = WebhookHandler(channel_secret)
-line_bot_api = MessagingApi(channel_access_token)
-
-# OpenAI API
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# ตรวจสอบค่า
+if channel_secret is None or channel_access_token is None:
+    raise Exception("Specify LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN as environment variables.")
 
 # Flask App
 app = Flask(__name__)
+handler = WebhookHandler(channel_secret)
+
+configuration = Configuration(access_token=channel_access_token)
+api_client = ApiClient(configuration)
+line_bot_api = MessagingApi(api_client)
 
 
 @app.route("/", methods=["GET"])
@@ -46,13 +48,13 @@ def callback():
     return "OK"
 
 
-@handler.add(TextMessageContent)
-def handle_text_message(event):
+@handler.add(MessageEvent, message=TextMessageContent)
+def handle_message(event):
     user_message = event.message.text
 
-    # ส่งข้อความไปยัง OpenAI (GPT-3.5 หรือ GPT-4 ถ้าคุณมีสิทธิ์)
+    # เรียกใช้ OpenAI GPT
     response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",  # หรือ gpt-4 ถ้าใช้งานได้
+        model="gpt-3.5-turbo",  # เปลี่ยนเป็น "gpt-4" ถ้าคุณมีสิทธิ์ใช้
         messages=[{"role": "user", "content": user_message}]
     )
 
